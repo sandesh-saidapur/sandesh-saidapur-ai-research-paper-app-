@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>arXiv AI Pulse - Latest Research & Tweet Summarizer</title>
+    <!-- Meta tags for SEO -->
+    <meta name="description" content="Stay updated with the latest AI, Machine Learning, and NLP research papers from arXiv. Generate engaging tweet summaries instantly using Google Gemini.">
+    <meta name="keywords" content="arxiv, artificial intelligence, machine learning, deep learning, research papers, tweet summarizer, gemini ai">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Background glow gradients -->
+    <div class="blob blob-purple"></div>
+    <div class="blob blob-cyan"></div>
+    <div class="blob blob-pink"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-logo">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-atom pulse-animation"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>arXiv AI <span class="gradient-text">Pulse</span></h1>
+                    <p class="tagline">Explore live AI research. Generate instant tweets.</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="btn-settings" class="btn btn-secondary" title="Configure API Keys">
+                    <i class="fa-solid fa-key"></i> <span>Settings</span>
+                </button>
+                <button id="btn-refresh" class="btn btn-primary" title="Fetch latest papers">
+                    <i class="fa-solid fa-arrows-rotate"></i> <span>Refresh Feed</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- API Key Missing Alert Banner -->
+        <div id="api-alert" class="api-banner hidden">
+            <div class="banner-content">
+                <i class="fa-solid fa-circle-exclamation text-warning"></i>
+                <span>Gemini API Key is not set. Summarization features are currently mocked. <strong>Configure API key to enable real summaries.</strong></span>
+            </div>
+            <button id="btn-banner-settings" class="btn-text">Set Key Now <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+
+        <!-- Main Layout Split -->
+        <main class="app-layout">
+            <!-- Left Panel: Category Filter and Papers List -->
+            <section class="panel-left">
+                <!-- Categories Selector -->
+                <div class="categories-container glass-card">
+                    <h2 class="section-title"><i class="fa-solid fa-sliders"></i> Focus Area</h2>
+                    <div class="categories-grid">
+                        <button class="category-pill active" data-category="all">
+                            <i class="fa-solid fa-layer-group"></i> All AI
+                        </button>
+                        <button class="category-pill" data-category="ml">
+                            <i class="fa-solid fa-brain"></i> Machine Learning
+                        </button>
+                        <button class="category-pill" data-category="nlp">
+                            <i class="fa-solid fa-language"></i> NLP
+                        </button>
+                        <button class="category-pill" data-category="cv">
+                            <i class="fa-solid fa-eye"></i> Computer Vision
+                        </button>
+                        <button class="category-pill" data-category="robotics">
+                            <i class="fa-solid fa-robot"></i> Robotics
+                        </button>
+                        <button class="category-pill" data-category="ai_general">
+                            <i class="fa-solid fa-microchip"></i> General AI
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Papers List -->
+                <div class="papers-header">
+                    <h2 class="section-title"><i class="fa-solid fa-book-open"></i> Latest Papers <span id="paper-count" class="count-badge">0</span></h2>
+                </div>
+                
+                <div id="papers-list-container" class="papers-list">
+                    <!-- Dynamic papers go here -->
+                    <div class="skeleton-loader">
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Selected Paper Inspector and Tweet Builder -->
+            <section class="panel-right">
+                <div class="sticky-panel">
+                    <!-- Card showing instructions if no paper is selected -->
+                    <div id="inspector-placeholder" class="glass-card placeholder-card">
+                        <div class="placeholder-icon">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+                        <h3>No Paper Selected</h3>
+                        <p>Select a research paper from the feed to view its summary, access references, and generate a tweet summary.</p>
+                    </div>
+
+                    <!-- Selected Paper Inspector Panel -->
+                    <div id="inspector-content" class="glass-card inspector-card hidden">
+                        <div class="inspector-header">
+                            <span class="paper-badge" id="insp-category-badge">arXiv</span>
+                            <div class="inspector-links">
+                                <a id="insp-arxiv-link" href="#" target="_blank" title="Open on arXiv"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                                <a id="insp-pdf-link" href="#" target="_blank" title="View PDF" class="pdf-icon"><i class="fa-solid fa-file-pdf"></i></a>
+                            </div>
+                        </div>
+
+                        <h3 id="insp-title" class="insp-title">Paper Title</h3>
+                        <p class="insp-authors" id="insp-authors">Authors Name</p>
+                        <div class="insp-meta">
+                            <span><i class="fa-regular fa-calendar"></i> Published: <strong id="insp-date">Date</strong></span>
+                            <span><i class="fa-solid fa-hashtag"></i> ID: <strong id="insp-id">ID</strong></span>
+                        </div>
+
+                        <div class="insp-abstract-container">
+                            <h4>Abstract</h4>
+                            <p id="insp-abstract" class="insp-abstract">Paper Abstract Text...</p>
+                        </div>
+
+                        <!-- Tweet Generation Section -->
+                        <div class="tweet-generator-box">
+                            <div class="box-header">
+                                <h4><i class="fa-brands fa-twitter"></i> Tweet Summarizer</h4>
+                                <span class="gemini-badge"><i class="fa-solid fa-sparkles"></i> Powered by Gemini</span>
+                            </div>
+
+                            <!-- Generated Tweet Text Area -->
+                            <div id="tweet-result-box" class="tweet-result-box hidden">
+                                <div class="tweet-editable-wrapper">
+                                    <textarea id="tweet-textarea" class="tweet-textarea" rows="4" maxlength="280"></textarea>
+                                    <div class="tweet-length-counter"><span id="char-count">0</span>/280</div>
+                                </div>
+                                <div class="tweet-actions">
+                                    <button id="btn-copy-tweet" class="btn btn-secondary btn-sm">
+                                        <i class="fa-regular fa-copy"></i> Copy Tweet
+                                    </button>
+                                    <a id="btn-share-tweet" href="#" target="_blank" class="btn btn-twitter btn-sm">
+                                        <i class="fa-brands fa-x-twitter"></i> Post
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Action button to trigger summarizer -->
+                            <button id="btn-generate-tweet" class="btn btn-primary btn-full-width">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Tweet
+                            </button>
+                            
+                            <!-- Loading State for Summarizer -->
+                            <div id="tweet-loader" class="tweet-loader hidden">
+                                <div class="spinner-small"></div>
+                                <span>Distilling paper contributions with Gemini...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="modal-box glass-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-gears"></i> Developer Settings</h3>
+                <button id="btn-close-modal" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">Enter your Google Gemini API Key below. Your key is stored locally in your browser cache and is only sent to the official Google Gemini API.</p>
+                
+                <div class="form-group">
+                    <label for="gemini-key-input">Gemini API Key</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="gemini-key-input" placeholder="AIzaSy..." autocomplete="off">
+                        <button type="button" id="btn-toggle-key-visibility" class="btn-icon-toggle">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
+                    <small class="form-help">Get a free API key from the <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.</small>
+                </div>
+
+                <div class="modal-info-box">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <p><strong>Privacy note:</strong> The API key is stored securely in your browser's <code>localStorage</code>. Requests are routed through the Flask server only to perform the fetch operations securely.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-clear-key" class="btn btn-danger">Clear Key</button>
+                <div class="footer-actions">
+                    <button id="btn-cancel-settings" class="btn btn-secondary">Cancel</button>
+                    <button id="btn-save-settings" class="btn btn-primary">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <i class="fa-solid fa-circle-check toast-icon"></i>
+        <span id="toast-message">Notification message</span>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
